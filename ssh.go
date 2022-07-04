@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"fmt"
 	"log"
 	"net"
@@ -15,10 +17,14 @@ import (
 )
 
 func runSSH(dir, addr string) error {
-	config := ssh.ServerConfig{
+	config := &ssh.ServerConfig{
 		NoClientAuth: true,
 	}
+	_, edSigner, _ := ed25519.GenerateKey(rand.Reader)
+	sshSigner, _ := ssh.NewSignerFromSigner(edSigner)
+	config.AddHostKey(sshSigner)
 
+	log.Println("starting ssh server on", addr)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
@@ -33,7 +39,7 @@ func runSSH(dir, addr string) error {
 		go func(conn net.Conn) {
 			defer conn.Close()
 
-			sshConn, chanc, reqc, err := ssh.NewServerConn(conn, &config)
+			sshConn, chanc, reqc, err := ssh.NewServerConn(conn, config)
 			if err != nil {
 				log.Println(err)
 				return
@@ -96,7 +102,7 @@ func handleSSHSession(dir string, ch ssh.Channel, reqc <-chan *ssh.Request) {
 
 				err := handleUploadPack(dir, ch)
 				if err != nil {
-					log.Println("upload-pack", err)
+					log.Println(err)
 					exitCode = 1
 					return
 				}
@@ -121,7 +127,6 @@ func handleSSHSession(dir string, ch ssh.Channel, reqc <-chan *ssh.Request) {
 func handleUploadPack(dir string, ch ssh.Channel) error {
 	ctx := context.Background()
 
-	log.Println("upload-pack", dir)
 	ep, err := transport.NewEndpoint("/")
 	if err != nil {
 		return fmt.Errorf("create transport endpoint: %w", err)

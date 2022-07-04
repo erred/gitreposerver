@@ -15,6 +15,8 @@ import (
 func runHTTP(dir, addr string) error {
 	http.HandleFunc("/info/refs", httpInfoRefs(dir))
 	http.HandleFunc("/git-upload-pack", httpGitUploadPack(dir))
+
+	log.Println("starting http server on", addr)
 	err := http.ListenAndServe(addr, nil)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
