@@ -131,7 +131,6 @@ func handleUploadPack(dir string, ch ssh.Channel) error {
 	if err != nil {
 		return fmt.Errorf("create transport endpoint: %w", err)
 	}
-	// cwd, _ := os.Getwd()
 	bfs := osfs.New(dir)
 	ld := server.NewFilesystemLoader(bfs)
 	svr := server.NewServer(ld)

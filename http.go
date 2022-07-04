@@ -26,6 +26,11 @@ func runHTTP(dir, addr string) error {
 
 func httpInfoRefs(dir string) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("service") != "git-upload-pack" {
+			http.Error(rw, "only smart git", 403)
+			return
+		}
+
 		rw.Header().Set("content-type", "application/x-git-upload-pack-advertisement")
 
 		ep, err := transport.NewEndpoint("/")
@@ -53,9 +58,6 @@ func httpInfoRefs(dir string) http.HandlerFunc {
 		ar.Prefix = [][]byte{
 			[]byte("# service=git-upload-pack"),
 			pktline.Flush,
-			// []byte("version 2"),
-			// // capabilities
-			// []byte(""),
 		}
 		err = ar.Encode(rw)
 		if err != nil {
